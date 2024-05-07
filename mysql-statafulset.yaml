@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mdb-statefulset
+spec:
+  serviceName: mdb-statefulset
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wordpress
+      tier: mysql
+  template:
+    metadata:
+      labels:
+        app: wordpress
+        tier: mysql
+    spec:
+      containers:
+      - name: mysql
+        image: mysql:8.2.0
+        env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom: 
+                    secretKeyRef:
+                      name: secret-wp
+                      key: WORDPRESS_DB_PASSWORD 
+            - name: MYSQL_DATABASE
+              valueFrom: 
+                        secretKeyRef:
+                          name: secret-wp
+                          key: WORDPRESS_DB_NAME
+        ports:
+        - containerPort: 3306
+          name: mysql
+        volumeMounts:
+        - name: mdb-data
+          mountPath: /var/lib/mysql
+  volumeClaimTemplates:
+  - metadata:
+      name: mdb-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: mdb-azure-disk
+      resources:
+        requests:
+          storage: 10Gi # Must match the PVC size
